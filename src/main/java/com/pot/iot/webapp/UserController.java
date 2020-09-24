@@ -6,18 +6,18 @@ import com.pot.iot.webapp.Entity.User;
 import com.pot.iot.webapp.Interface.IMailService;
 import com.pot.iot.webapp.Repository.UserRepository;
 import com.pot.iot.webapp.Util.RS256Util;
-import com.sun.deploy.net.HttpResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpRequest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -38,6 +38,12 @@ public class UserController extends BaseController {
     private IMailService mailService;
     @Value("${mail.activate.account}")
     private String activateAccountMail;
+    @Value("${mail.reset.password}")
+    private String resetPasswordMail;
+    @Value("${frontend.host}")
+    private String host;
+    @Value("${frontend.port}")
+    private String port;
 
     @PostMapping("/register")
     public ResultVo registerUser(@RequestBody Map<String,String> registerUser){
@@ -52,10 +58,15 @@ public class UserController extends BaseController {
         User save = userRepository.save(user);
         String token = rs256Util.buildToken(userId);
         redisTemplate.opsForValue().set(token,email);
-        String url="https://ec2-18-163-118-242.ap-east-1.compute.amazonaws.com:8080/activateAccount?token="+token;
-        activateAccountMail=activateAccountMail.replace("\'username\'",user.getUsername());
-        activateAccountMail=activateAccountMail.replace("\'url\'",url);
-        mailService.sendHtmlMail(user.getEmail(),"Activate Your Account",activateAccountMail);
+        String url="http://"+host+":"+port+"/activate-account?token="+token;
+        String registerMail=activateAccountMail.replace("\'username\'",username);
+        registerMail=registerMail.replace("\'url\'",url);
+        try{
+            mailService.sendHtmlMail(user.getEmail(),"Activate Your Account",registerMail);
+        }
+        catch (Exception e){
+            System.out.println(e.getMessage());
+        }
         return success(save.toString());
     }
 
@@ -87,7 +98,7 @@ public class UserController extends BaseController {
         else return error(ResultVo.ResultCode.WRONG_PASSWORD_ERROR);
     }
 
-    @PostMapping("/activateAccount")
+    @GetMapping("/activateAccount")
     public ResultVo activateAccount(HttpServletRequest request,
                                     HttpServletResponse response){
         String token=request.getParameter("token");
@@ -101,6 +112,7 @@ public class UserController extends BaseController {
             return error(ResultVo.ResultCode.EMAIL_INVALID_ERROR);
         }
         user.setAccountStatus(true);
+        userRepository.save(user);
         redisTemplate.opsForValue().getOperations().delete(String.format(token,email));
         return success();
     }
@@ -108,6 +120,34 @@ public class UserController extends BaseController {
     @PostMapping("/forgetPassword")
     public ResultVo forgetPassword(@RequestBody Map<String,String>userEmail){
         String email=userEmail.get("email");
+        User user=userRepository.findUserByEmail(email);
+        String token=rs256Util.buildToken(user.getUserId());
+        redisTemplate.opsForValue().set(token,email);
+        String url="http://"+host+":"+port+"/reset-password?token="+token;
+        String forgetPasswordMail=resetPasswordMail.replace("\'url\'",url);
+        mailService.sendHtmlMail(user.getEmail(),"Reset Your Password",forgetPasswordMail);
+        return success();
+    }
+
+    @PostMapping("/resetPassword")
+    public ResultVo resetPassword(HttpServletRequest request,
+                                  HttpServletResponse response,
+                                  @RequestBody Map<String,String>newPassword){
+        String token=request.getParameter("token");
+        Object value = redisTemplate.opsForValue().get(token);
+        if (value==null){
+            return error(ResultVo.ResultCode.TOKEN_AURHENTICATION_ERROR);
+        }
+        String email=value.toString();
+        User user=userRepository.findUserByEmailAndAccountStatus(email,true);
+        if (user==null){
+            return error(ResultVo.ResultCode.EMAIL_INVALID_ERROR);
+        }
+
+        String password= DigestUtils.md5DigestAsHex(newPassword.get("password").getBytes());
+        user.setPassword(password);
+        userRepository.save(user);
+
         return success();
     }
 
@@ -162,5 +202,18 @@ public class UserController extends BaseController {
             id = "PIU-" + id.substring(0, 8);
         }
         return id;
+    }
+
+    @Configuration
+    public class CORSConfiguration extends WebMvcConfigurerAdapter {
+        @Override
+        public void addCorsMappings(CorsRegistry registry) {
+            registry.addMapping("/**")
+                    .allowedMethods("*")
+                    .allowedOrigins("*")
+                    .allowedHeaders("*")
+                    .allowCredentials(true);
+            super.addCorsMappings(registry);
+        }
     }
 }
