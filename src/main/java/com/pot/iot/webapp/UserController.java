@@ -6,6 +6,8 @@ import com.pot.iot.webapp.Entity.User;
 import com.pot.iot.webapp.Interface.IMailService;
 import com.pot.iot.webapp.Repository.UserRepository;
 import com.pot.iot.webapp.Util.RS256Util;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -44,6 +46,7 @@ public class UserController extends BaseController {
     private String host;
     @Value("${frontend.port}")
     private String port;
+    Logger logger = LoggerFactory.getLogger(UserController.class);
 
     @PostMapping("/register")
     public ResultVo registerUser(@RequestBody Map<String,String> registerUser){
@@ -52,6 +55,7 @@ public class UserController extends BaseController {
         String email=registerUser.get("email");
         String password= DigestUtils.md5DigestAsHex(registerUser.get("password").getBytes());
         if (userRepository.findUserByEmail(email)!=null){
+            logger.error("Email {} has been used.",email);
             return error(ResultVo.ResultCode.EMAIL_DUPLICATE_ERROR);
         }
         User user = new User(userId,username,email,password);
@@ -66,7 +70,10 @@ public class UserController extends BaseController {
         }
         catch (Exception e){
             System.out.println(e.getMessage());
+            logger.error("Registration email cannot be sent to {}",email);
+            return error(ResultVo.ResultCode.REGISTRATION_EMAIL_ERROR);
         }
+        logger.info("User {} has been registered.",save.getUserId());
         return success(save.toString());
     }
 
@@ -79,9 +86,13 @@ public class UserController extends BaseController {
         if (user==null){
             user=userRepository.findUserByEmail(email);
             if (user==null){
+                logger.error("Email {} is invalid.",email);
                 return error(ResultVo.ResultCode.EMAIL_INVALID_ERROR);
             }
-            else return error(ResultVo.ResultCode.ACCOUNT_INACTIVATE_ERROR);
+            else {
+                logger.error("Account {} hasn't been activated.",user.getUserId());
+                return error(ResultVo.ResultCode.ACCOUNT_INACTIVATE_ERROR);
+            }
         };
         if (password.equals(user.getPassword())) {
             String userId=user.getUserId();
@@ -104,28 +115,44 @@ public class UserController extends BaseController {
         String token=request.getParameter("token");
         Object value = redisTemplate.opsForValue().get(token);
         if (value==null){
+            logger.error("Activation token {} has expired.",token);
             return error(ResultVo.ResultCode.TOKEN_AURHENTICATION_ERROR);
         }
         String email=value.toString();
         User user=userRepository.findUserByEmailAndAccountStatus(email,false);
         if (user==null){
+            logger.error("Email {} is invalid.",email);
             return error(ResultVo.ResultCode.EMAIL_INVALID_ERROR);
         }
         user.setAccountStatus(true);
         userRepository.save(user);
         redisTemplate.opsForValue().getOperations().delete(String.format(token,email));
+        logger.info("Account {} has been activated.",user.getUserId());
         return success();
     }
 
     @PostMapping("/forgetPassword")
     public ResultVo forgetPassword(@RequestBody Map<String,String>userEmail){
         String email=userEmail.get("email");
-        User user=userRepository.findUserByEmail(email);
+        User user=userRepository.findUserByEmailAndAccountStatus(email,true);
+        if (user==null){
+            logger.error("Email {} is invalid.",email);
+            return error(ResultVo.ResultCode.EMAIL_INVALID_ERROR);
+        }
         String token=rs256Util.buildToken(user.getUserId());
         redisTemplate.opsForValue().set(token,email);
         String url="http://"+host+":"+port+"/reset-password?token="+token;
         String forgetPasswordMail=resetPasswordMail.replace("\'url\'",url);
-        mailService.sendHtmlMail(user.getEmail(),"Reset Your Password",forgetPasswordMail);
+        forgetPasswordMail=forgetPasswordMail.replace("\'username\'",user.getUsername());
+        try{
+            mailService.sendHtmlMail(user.getEmail(),"Reset Your Password",forgetPasswordMail);
+        }
+        catch (Exception e){
+            System.out.println(e.getMessage());
+            logger.error("Password reset email cannot be sent to {}",email);
+            return error(ResultVo.ResultCode.FORGET_PASSWORD_EMAIL_ERROR);
+        }
+        logger.info("Password reset Email has been sent to {}",email);
         return success();
     }
 
@@ -136,18 +163,20 @@ public class UserController extends BaseController {
         String token=request.getParameter("token");
         Object value = redisTemplate.opsForValue().get(token);
         if (value==null){
+            logger.error("Password reset token {} has expired.",token);
             return error(ResultVo.ResultCode.TOKEN_AURHENTICATION_ERROR);
         }
         String email=value.toString();
         User user=userRepository.findUserByEmailAndAccountStatus(email,true);
         if (user==null){
+            logger.error("Email {} is invalid.",email);
             return error(ResultVo.ResultCode.EMAIL_INVALID_ERROR);
         }
 
         String password= DigestUtils.md5DigestAsHex(newPassword.get("password").getBytes());
         user.setPassword(password);
         userRepository.save(user);
-
+        logger.info("User {} has reset password.",user.getUserId());
         return success();
     }
 
@@ -159,6 +188,7 @@ public class UserController extends BaseController {
         String token=request.getParameter("token");
         Object value = redisTemplate.opsForValue().get(token);
         if (value==null){
+            logger.error("Token {} has expired.",token);
             return error(ResultVo.ResultCode.TOKEN_AURHENTICATION_ERROR);
         }
         String userid=value.toString();
@@ -167,6 +197,7 @@ public class UserController extends BaseController {
         User user=userRepository.findByUserId(userid);
         user.setUsername(username);
         userRepository.save(user);
+        logger.info("User {} has changed username.",user.getUserId());
         return success(user.toString());
     }
 
@@ -176,11 +207,13 @@ public class UserController extends BaseController {
         String token=request.getParameter("token");
         Object value = redisTemplate.opsForValue().get(token);
         if (value==null){
+            logger.error("Token {} has expired.",token);
             return error(ResultVo.ResultCode.TOKEN_AURHENTICATION_ERROR);
         }
         String userid=value.toString();
         redisTemplate.opsForValue().getOperations().delete(String.format(token,userid));
         redisTemplate.opsForValue().getOperations().delete(String.format(userid,token));
+        logger.info("User {} has logged out.",userid);
         return success();
     }
 
