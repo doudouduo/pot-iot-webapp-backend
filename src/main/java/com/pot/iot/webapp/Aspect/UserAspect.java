@@ -43,8 +43,8 @@ public class UserAspect {
         if (value==null){
             return baseController.error(ResultVo.ResultCode.TOKEN_AURHENTICATION_ERROR);
         }
-        redisTemplate.opsForValue().set(token,value.toString() , rs256Util.EXPIRE_TIME, TimeUnit.SECONDS);
-        redisTemplate.opsForValue().set(value.toString() ,token, rs256Util.EXPIRE_TIME, TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set(token,value.toString() , rs256Util.LOGIN_EXPIRE_TIME, TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set(value.toString() ,token, rs256Util.LOGIN_EXPIRE_TIME, TimeUnit.SECONDS);
         return pjp.proceed();
     }
 }

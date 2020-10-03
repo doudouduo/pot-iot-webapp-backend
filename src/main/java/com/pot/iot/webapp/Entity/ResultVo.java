@@ -34,6 +34,8 @@ public class ResultVo {
         FORGET_PASSWORD_EMAIL_ERROR("FORGET_PASSWORD_EMAIL_ERROR",7),
         DEVICE_INVALID_ERROR("DEVICE_INVALID_ERROR",8),
         DEVICE_PIN_CODE_ERROR("DEVICE_PIN_CODE_ERROR",9),
+        COMMUNICATION_INTERVAL_ERROR("COMMUNICATION_INTERVAL_ERROR",10),
+        COMMUNICATION_MODE_ERROR("COMMUNICATION_MODE_ERROR",12),
         ;
         ResultCode(String message, Integer resultCode) {
             this.resultCode = resultCode;

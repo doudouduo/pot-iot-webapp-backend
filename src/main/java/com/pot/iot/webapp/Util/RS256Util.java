@@ -23,8 +23,9 @@ public class RS256Util {
         return rsaJWK;
     }
 
-//    private static final long EXPIRE_TIME = 1000 * 60  * 5;
-    public static long EXPIRE_TIME = 1000 * 60  * 5;
+    public static long ACTIVATION_EXPIRE_TIME = 1000 * 48 * 60 * 60;//48h
+    public static long LOGIN_EXPIRE_TIME = 1000 * 24 * 60 * 60;//24h
+    public static long RESET_PASSWORD_EXPIRE_TIME = 1000 * 30 * 60;//30min
     private static RSAKey rsaKey;
     private static RSAKey publicRsaKey;
 
@@ -42,15 +43,26 @@ public class RS256Util {
     }
 
 
-    public static String buildToken(String account) {
+    public static String buildToken(String account,String type) {
         try {
             /**
              * 1. 生成秘钥,秘钥是token的签名方持有，不可对外泄漏
              */
             RSASSASigner rsassaSigner = new RSASSASigner(rsaKey);
-/**
- * 2. 建立payload 载体
- */
+            /**
+             * 2. 建立payload 载体
+             */
+            long EXPIRE_TIME=0;
+            if (type.equals("ACTIVATION")){
+                EXPIRE_TIME=ACTIVATION_EXPIRE_TIME;
+            }
+            else if (type.equals("LOGIN")){
+                EXPIRE_TIME=LOGIN_EXPIRE_TIME;
+            }
+            else if (type.equals("RESET_PASSWORD")){
+                EXPIRE_TIME=RESET_PASSWORD_EXPIRE_TIME;
+            }
+
             JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
                     .subject("doi")
                     .issuer("http://www.doiduoyi.com")

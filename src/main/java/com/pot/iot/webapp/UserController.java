@@ -59,10 +59,8 @@ public class UserController extends BaseController {
             return error(ResultVo.ResultCode.EMAIL_DUPLICATE_ERROR);
         }
         User user = new User(userId,username,email,password);
-        User save = userRepository.save(user);
-        String token = rs256Util.buildToken(userId);
-        redisTemplate.opsForValue().set(token,email);
-        String url="http://"+host+":"+port+"/activate-account?token="+token;
+        String token = rs256Util.buildToken(userId,"ACTIVATION");
+        String url="http://"+host+":"+port+"/user-services/activation-result?token="+token;
         String registerMail=activateAccountMail.replace("\'username\'",username);
         registerMail=registerMail.replace("\'url\'",url);
         try{
@@ -73,6 +71,8 @@ public class UserController extends BaseController {
             logger.error("Registration email cannot be sent to {}",email);
             return error(ResultVo.ResultCode.REGISTRATION_EMAIL_ERROR);
         }
+        User save = userRepository.save(user);
+        redisTemplate.opsForValue().set(token,email,rs256Util.ACTIVATION_EXPIRE_TIME, TimeUnit.MILLISECONDS);
         logger.info("User {} has been registered.",save.getUserId());
         return success(save.toString());
     }
@@ -96,13 +96,13 @@ public class UserController extends BaseController {
         };
         if (password.equals(user.getPassword())) {
             String userId=user.getUserId();
-            String token = rs256Util.buildToken(userId);
+            String token = rs256Util.buildToken(userId,"LOGIN");
             Object value = redisTemplate.opsForValue().get(userId);
             if (value!=null) {
                 redisTemplate.opsForValue().getOperations().delete(String.format(value.toString(), userId));
             }
-            redisTemplate.opsForValue().set(token,user.getUserId() , rs256Util.EXPIRE_TIME, TimeUnit.SECONDS);
-            redisTemplate.opsForValue().set(user.getUserId() ,token, rs256Util.EXPIRE_TIME, TimeUnit.SECONDS);
+            redisTemplate.opsForValue().set(token,user.getUserId() , rs256Util.LOGIN_EXPIRE_TIME, TimeUnit.MILLISECONDS);
+            redisTemplate.opsForValue().set(user.getUserId() ,token, rs256Util.LOGIN_EXPIRE_TIME, TimeUnit.MICROSECONDS);
 
             return success(token);
         }
@@ -139,8 +139,8 @@ public class UserController extends BaseController {
             logger.error("Email {} is invalid.",email);
             return error(ResultVo.ResultCode.EMAIL_INVALID_ERROR);
         }
-        String token=rs256Util.buildToken(user.getUserId());
-        redisTemplate.opsForValue().set(token,email);
+        String token=rs256Util.buildToken(user.getUserId(),"RESET_PASSWORD");
+        redisTemplate.opsForValue().set(token,email,rs256Util.RESET_PASSWORD_EXPIRE_TIME, TimeUnit.MILLISECONDS);
         String url="http://"+host+":"+port+"/reset-password?token="+token;
         String forgetPasswordMail=resetPasswordMail.replace("\'url\'",url);
         forgetPasswordMail=forgetPasswordMail.replace("\'username\'",user.getUsername());
@@ -192,9 +192,11 @@ public class UserController extends BaseController {
             return error(ResultVo.ResultCode.TOKEN_AURHENTICATION_ERROR);
         }
         String userid=value.toString();
-        redisTemplate.opsForValue().set(token,userid , rs256Util.EXPIRE_TIME, TimeUnit.SECONDS);
-        redisTemplate.opsForValue().set(userid,token, rs256Util.EXPIRE_TIME, TimeUnit.SECONDS);
         User user=userRepository.findByUserId(userid);
+        if (user==null){
+            logger.error("Token {} is invalid.",token);
+            return error(ResultVo.ResultCode.TOKEN_AURHENTICATION_ERROR);
+        }
         user.setUsername(username);
         userRepository.save(user);
         logger.info("User {} has changed username.",user.getUserId());
