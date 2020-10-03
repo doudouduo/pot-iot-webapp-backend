@@ -141,7 +141,7 @@ public class UserController extends BaseController {
         }
         String token=rs256Util.buildToken(user.getUserId(),"RESET_PASSWORD");
         redisTemplate.opsForValue().set(token,email,rs256Util.RESET_PASSWORD_EXPIRE_TIME, TimeUnit.MILLISECONDS);
-        String url="http://"+host+":"+port+"/reset-password?token="+token;
+        String url="http://"+host+":"+port+"/user-services/reset-password?token="+token;
         String forgetPasswordMail=resetPasswordMail.replace("\'url\'",url);
         forgetPasswordMail=forgetPasswordMail.replace("\'username\'",user.getUsername());
         try{
