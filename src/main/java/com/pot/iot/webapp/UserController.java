@@ -131,6 +131,38 @@ public class UserController extends BaseController {
         return success();
     }
 
+    @PostMapping("/reactiveAccount")
+    public ResultVo reactiveAccount(@RequestBody Map<String,String> reactiveAccount){
+        String email=reactiveAccount.get("email");
+        User user=userRepository.findUserByEmailAndAccountStatus(email,false);
+        if (user==null){
+            user=userRepository.findUserByEmailAndAccountStatus(email,true);
+            if (user==null){
+                logger.error("Email {} is invalid.",email);
+                return error(ResultVo.ResultCode.EMAIL_INVALID_ERROR);
+            }
+            else {
+                logger.error("Email {} has been activated.",email);
+                return error(ResultVo.ResultCode.ACCOUNT_ACTIVATED_ERROR);
+            }
+        }
+        String token = rs256Util.buildToken(user.getUserId(),"ACTIVATION");
+        String url="http://"+host+":"+port+"/user-services/activation-result?token="+token;
+        String registerMail=activateAccountMail.replace("\'username\'",user.getUsername());
+        registerMail=registerMail.replace("\'url\'",url);
+        try{
+            mailService.sendHtmlMail(user.getEmail(),"Activate Your Account",registerMail);
+        }
+        catch (Exception e){
+            System.out.println(e.getMessage());
+            logger.error("Registration email cannot be sent to {}",email);
+            return error(ResultVo.ResultCode.REGISTRATION_EMAIL_ERROR);
+        }
+        redisTemplate.opsForValue().set(token,email,rs256Util.ACTIVATION_EXPIRE_TIME, TimeUnit.MILLISECONDS);
+        logger.info("Reactivation email has been sent to {}.",email);
+        return success();
+    }
+
     @PostMapping("/forgetPassword")
     public ResultVo forgetPassword(@RequestBody Map<String,String>userEmail){
         String email=userEmail.get("email");
