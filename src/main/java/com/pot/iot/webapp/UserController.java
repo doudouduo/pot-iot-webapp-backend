@@ -112,7 +112,7 @@ public class UserController extends BaseController {
                 logger.error("Account {} hasn't been activated.",user.getUserId());
                 return error(ResultVo.ResultCode.ACCOUNT_INACTIVE_ERROR);
             }
-        };
+        }
         if (password.equals(user.getPassword())) {
             String userId=user.getUserId();
             String token = rs256Util.buildToken(userId,"LOGIN");
@@ -187,8 +187,15 @@ public class UserController extends BaseController {
         String email=userEmail.get("email");
         User user=userRepository.findUserByEmailAndAccountStatus(email,true);
         if (user==null){
-            logger.error("Email {} is invalid.",email);
-            return error(ResultVo.ResultCode.EMAIL_INVALID_ERROR);
+            user=userRepository.findUserByEmail(email);
+            if (user==null){
+                logger.error("Email {} is invalid.",email);
+                return error(ResultVo.ResultCode.EMAIL_INVALID_ERROR);
+            }
+            else {
+                logger.error("Account {} hasn't been activated.",user.getUserId());
+                return error(ResultVo.ResultCode.ACCOUNT_INACTIVE_ERROR);
+            }
         }
         String token=rs256Util.buildToken(user.getUserId(),"RESET_PASSWORD");
         redisTemplate.opsForValue().set(token,email,rs256Util.RESET_PASSWORD_EXPIRE_TIME, TimeUnit.MILLISECONDS);
