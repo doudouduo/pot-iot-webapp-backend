@@ -77,6 +77,25 @@ public class UserController extends BaseController {
         return success(save.toString());
     }
 
+    @GetMapping("/checkEmail")
+    public ResultVo checkEmail(HttpServletRequest request,
+                               HttpServletResponse response){
+        String email=request.getParameter("email");
+        User user=userRepository.findUserByEmailAndAccountStatus(email,true);
+        if (user==null){
+            user=userRepository.findUserByEmail(email);
+            if (user==null){
+                logger.error("Email {} is invalid.",email);
+                return error(ResultVo.ResultCode.EMAIL_INVALID_ERROR);
+            }
+            else {
+                logger.error("Account {} hasn't been activated.",user.getUserId());
+                return error(ResultVo.ResultCode.ACCOUNT_INACTIVE_ERROR);
+            }
+        };
+        return success();
+    }
+
     @PostMapping("/login")
     public ResultVo login(@RequestBody Map<String,String>loginUser){
         BCryptPasswordEncoder bCryptPasswordEncoder=new BCryptPasswordEncoder();
@@ -91,7 +110,7 @@ public class UserController extends BaseController {
             }
             else {
                 logger.error("Account {} hasn't been activated.",user.getUserId());
-                return error(ResultVo.ResultCode.ACCOUNT_INACTIVATE_ERROR);
+                return error(ResultVo.ResultCode.ACCOUNT_INACTIVE_ERROR);
             }
         };
         if (password.equals(user.getPassword())) {
