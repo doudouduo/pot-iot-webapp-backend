@@ -6,19 +6,18 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import javax.persistence.Entity;
-import javax.persistence.EntityListeners;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import javax.persistence.*;
 import java.sql.Timestamp;
 import java.util.Date;
 
 @Entity
 @Data
+@IdClass(UserDevicePK.class)
 @EntityListeners(AuditingEntityListener.class)
 public class UserDevice {
     @Id
     private String iemi;
+    @Id
     @JSONField(name="user_id")
     private String userId;
     @JSONField(name="pin_code")
