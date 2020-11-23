@@ -105,12 +105,11 @@ public class DeviceController extends BaseController{
 
     @GetMapping("/device")
     public ResultVo getDeviceById(HttpServletRequest request,
-                                  HttpServletResponse response,
-                                  @RequestBody Map<String,String>devices){
+                                  HttpServletResponse response){
         String token=request.getParameter("token");
         Object value = redisTemplate.opsForValue().get(token);
         String userId=value.toString();
-        String iemi=devices.get("iemi");
+        String iemi=request.getParameter("iemi");
         UserDevice userDevice=userdeviceRepository.findDeviceByUserIdAndIemiAndIsdelete(userId,iemi,false);
         if (userDevice==null){
             logger.error("Device {} provided by user {} is invalid.",iemi,userId);
