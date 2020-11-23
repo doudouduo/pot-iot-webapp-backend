@@ -150,9 +150,9 @@ public class UserController extends BaseController {
         return success();
     }
 
-    @PostMapping("/reactiveAccount")
-    public ResultVo reactiveAccount(@RequestBody Map<String,String> reactiveAccount){
-        String email=reactiveAccount.get("email");
+    @PostMapping("/resendActivationEmail")
+    public ResultVo resendActivationEmail(@RequestBody Map<String,String> reactivationEmail){
+        String email=reactivationEmail.get("email");
         User user=userRepository.findUserByEmailAndAccountStatus(email,false);
         if (user==null){
             user=userRepository.findUserByEmailAndAccountStatus(email,true);
@@ -174,7 +174,7 @@ public class UserController extends BaseController {
         }
         catch (Exception e){
             System.out.println(e.getMessage());
-            logger.error("Registration email cannot be sent to {}",email);
+            logger.error("Reactivation email cannot be sent to {}",email);
             return error(ResultVo.ResultCode.REGISTRATION_EMAIL_ERROR);
         }
         redisTemplate.opsForValue().set(token,email,rs256Util.ACTIVATION_EXPIRE_TIME, TimeUnit.MILLISECONDS);
