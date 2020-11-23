@@ -16,10 +16,8 @@ import java.util.Date;
 @Entity
 @Data
 @EntityListeners(AuditingEntityListener.class)
-public class Device {
+public class UserDevice {
     @Id
-    @JSONField(name="device_id")
-    private String deviceId;
     private String iemi;
     @JSONField(name="user_id")
     private String userId;
@@ -28,7 +26,7 @@ public class Device {
     private String name;
     private String description;
     @JSONField(name="device_status")
-    private String deviceStatus;
+    private int deviceStatus;
     @JSONField(name="communication_mode")
     private int communicationMode;
     @JSONField(name="signal_strength")
@@ -63,9 +61,34 @@ public class Device {
     @JSONField(name="update_time")
     private Timestamp updateTime;
 
-    public Device(){
+    public UserDevice(){
         description="";
-        deviceStatus="";
+        deviceStatus=-1;
+        communicationMode=-1;
+        signalStrength=-1;
+        battery="";
+        certificate="";
+        publicKey="";
+        privateKey="";
+        gps="";
+        ledStatus=-1;
+        acceleration="";
+        communicationInterval=-1;
+        onTime=new Timestamp(new Date(0).getTime());
+        offTime=new Timestamp(new Date(0).getTime());
+        lastCommunication=new Timestamp(new Date(0).getTime());
+        deviceCommand="";
+        modeCommand="";
+        isdelete=false;
+    }
+
+    public UserDevice(String iemi,String userId,String pinCode,String name,String description){
+        this.iemi=iemi;
+        this.userId=userId;
+        this.pinCode=pinCode;
+        this.name=name;
+        this.description=description;
+        deviceStatus=-1;
         communicationMode=-1;
         signalStrength=-1;
         battery="";
