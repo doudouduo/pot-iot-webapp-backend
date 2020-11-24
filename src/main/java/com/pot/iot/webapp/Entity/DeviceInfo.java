@@ -14,7 +14,7 @@ import java.sql.Timestamp;
 @EntityListeners(AuditingEntityListener.class)
 public class DeviceInfo {
     @Id
-    private String iemi;
+    private String imei;
     @JSONField(name="pin_code")
     private String pinCode;
     @JSONField(name="product_id")

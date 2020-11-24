@@ -41,30 +41,30 @@ public class DeviceController extends BaseController{
                               HttpServletResponse response,
                               @RequestBody Map<String,String>addDevice){
         String productId=addDevice.get("product_id");
-        String iemi=addDevice.get("iemi");
+        String imei=addDevice.get("imei");
         String pinCode=addDevice.get("pin_code");
         String name=addDevice.get("name");
         String description=addDevice.get("description");
         String token=request.getParameter("token");
         Object value = redisTemplate.opsForValue().get(token);
         String userId=value.toString();
-        DeviceInfo deviceInfo=deviceInfoRepository.findDeviceInfoByProductIdAndIemi(productId,iemi);
+        DeviceInfo deviceInfo=deviceInfoRepository.findDeviceInfoByProductIdAndImei(productId,imei);
         if (deviceInfo==null){
-            logger.error("Product {} or iemi {} provided by user {} is invalid.",productId,iemi,userId);
+            logger.error("Product {} or imei {} provided by user {} is invalid.",productId,imei,userId);
             return error(ResultVo.ResultCode.DEVICE_INVALID_ERROR);
         }
         if (!pinCode.equals(deviceInfo.getPinCode())){
-            logger.error("Pin Code {} of device {} provided by user {} is invalid.",pinCode,iemi,userId);
+            logger.error("Pin Code {} of device {} provided by user {} is invalid.",pinCode,imei,userId);
             return error(ResultVo.ResultCode.DEVICE_PIN_CODE_ERROR);
         }
-        UserDevice userDevice=userdeviceRepository.findDeviceByIemiAndIsdelete(iemi,false);
+        UserDevice userDevice=userdeviceRepository.findDeviceByImeiAndIsdelete(imei,false);
         if (userDevice!=null){
-            logger.error("Device {} provided by user {} has been already registered.",iemi,userId);
+            logger.error("Device {} provided by user {} has been already registered.",imei,userId);
             return error(ResultVo.ResultCode.DEVICE_ALREADY_REGISTERED_ERROR);
         }
-        userDevice=new UserDevice(iemi,userId,pinCode,name,description);
+        userDevice=new UserDevice(imei,userId,pinCode,name,description);
         userdeviceRepository.save(userDevice);
-        logger.info("User {} has successfully added device {}.",userId,iemi);
+        logger.info("User {} has successfully added device {}.",userId,imei);
         return success();
     }
 
@@ -76,19 +76,19 @@ public class DeviceController extends BaseController{
         Object value = redisTemplate.opsForValue().get(token);
         String userId=value.toString();
         String pinCode=removeDevice.get("pin_code");
-        String iemi=removeDevice.get("iemi");
-        UserDevice device=userdeviceRepository.findDeviceByUserIdAndIemiAndIsdelete(userId,iemi,false);
+        String imei=removeDevice.get("imei");
+        UserDevice device=userdeviceRepository.findDeviceByUserIdAndImeiAndIsdelete(userId,imei,false);
         if (device==null){
-            logger.error("Device {} provided by user {} is invalid.",iemi,userId);
+            logger.error("Device {} provided by user {} is invalid.",imei,userId);
             return error(ResultVo.ResultCode.DEVICE_INVALID_ERROR);
         }
         if (!pinCode.equals(device.getPinCode())){
-            logger.error("Pin Code {} of device {} provided by user {} is invalid.",pinCode,iemi,userId);
+            logger.error("Pin Code {} of device {} provided by user {} is invalid.",pinCode,imei,userId);
             return error(ResultVo.ResultCode.DEVICE_PIN_CODE_ERROR);
         }
         device.setIsdelete(true);
         userdeviceRepository.save(device);
-        logger.info("User {} has successfully removed device {}.",userId,iemi);
+        logger.info("User {} has successfully removed device {}.",userId,imei);
         return success();
     }
 
@@ -109,14 +109,14 @@ public class DeviceController extends BaseController{
         String token=request.getParameter("token");
         Object value = redisTemplate.opsForValue().get(token);
         String userId=value.toString();
-        String iemi=request.getParameter("iemi");
-        UserDevice userDevice=userdeviceRepository.findDeviceByUserIdAndIemiAndIsdelete(userId,iemi,false);
+        String imei=request.getParameter("imei");
+        UserDevice userDevice=userdeviceRepository.findDeviceByUserIdAndImeiAndIsdelete(userId,imei,false);
         if (userDevice==null){
-            logger.error("Device {} provided by user {} is invalid.",iemi,userId);
+            logger.error("Device {} provided by user {} is invalid.",imei,userId);
             return error(ResultVo.ResultCode.DEVICE_INVALID_ERROR);
         }
         else {
-            logger.info("User {} has successfully got his device {}.",userId,iemi);
+            logger.info("User {} has successfully got his device {}.",userId,imei);
             return success(userDevice);
         }
     }
@@ -128,16 +128,16 @@ public class DeviceController extends BaseController{
         String token=request.getParameter("token");
         Object value = redisTemplate.opsForValue().get(token);
         String userId=value.toString();
-        String iemi=deviceName.get("iemi");
+        String imei=deviceName.get("imei");
         String name=deviceName.get("name");
-        UserDevice userDevice=userdeviceRepository.findDeviceByUserIdAndIemiAndIsdelete(userId,iemi,false);
+        UserDevice userDevice=userdeviceRepository.findDeviceByUserIdAndImeiAndIsdelete(userId,imei,false);
         if (userDevice==null){
-            logger.error("Device {} provided by user {} is invalid.",iemi,userId);
+            logger.error("Device {} provided by user {} is invalid.",imei,userId);
             return error(ResultVo.ResultCode.DEVICE_INVALID_ERROR);
         }
         userDevice.setName(name);
         userdeviceRepository.save(userDevice);
-        logger.info("User {} has successfully changed the device name of his device {}.",userId,iemi);
+        logger.info("User {} has successfully changed the device name of his device {}.",userId,imei);
         return success(userDevice);
     }
 
@@ -148,16 +148,16 @@ public class DeviceController extends BaseController{
         String token=request.getParameter("token");
         Object value = redisTemplate.opsForValue().get(token);
         String userId=value.toString();
-        String iemi=deviceDescription.get("iemi");
+        String imei=deviceDescription.get("imei");
         String description=deviceDescription.get("description");
-        UserDevice userDevice=userdeviceRepository.findDeviceByUserIdAndIemiAndIsdelete(userId,iemi,false);
+        UserDevice userDevice=userdeviceRepository.findDeviceByUserIdAndImeiAndIsdelete(userId,imei,false);
         if (userDevice==null){
-            logger.error("Device {} provided by user {} is invalid.",iemi,userId);
+            logger.error("Device {} provided by user {} is invalid.",imei,userId);
             return error(ResultVo.ResultCode.DEVICE_INVALID_ERROR);
         }
         userDevice.setDescription(description);
         userdeviceRepository.save(userDevice);
-        logger.info("User {} has successfully changed the device description of his device {}.",userId,iemi);
+        logger.info("User {} has successfully changed the device description of his device {}.",userId,imei);
         return success(userDevice);
     }
 
@@ -168,23 +168,23 @@ public class DeviceController extends BaseController{
         String token=request.getParameter("token");
         Object value = redisTemplate.opsForValue().get(token);
         String userId=value.toString();
-        String iemi=deviceDescription.get("iemi");
+        String imei=deviceDescription.get("imei");
         String command=deviceDescription.get("command");
-        UserDevice userDevice=userdeviceRepository.findDeviceByUserIdAndIemiAndIsdelete(userId,iemi,false);
+        UserDevice userDevice=userdeviceRepository.findDeviceByUserIdAndImeiAndIsdelete(userId,imei,false);
         if (userDevice==null){
-            logger.error("Device {} provided by user {} is invalid.",iemi,userId);
+            logger.error("Device {} provided by user {} is invalid.",imei,userId);
             return error(ResultVo.ResultCode.DEVICE_INVALID_ERROR);
         }
         if (userDevice.getDeviceCommand().equals("")){
             userDevice.setDeviceCommand(command);
             userdeviceRepository.save(userDevice);
-            logger.info("User {} has successfully added a command {} to his device {}.",userId,command,iemi);
+            logger.info("User {} has successfully added a command {} to his device {}.",userId,command,imei);
             return success();
         }
         else {
             userDevice.setDeviceCommand(userDevice.getDeviceCommand()+";"+command);
             userdeviceRepository.save(userDevice);
-            logger.info("User {} has successfully added a command {} to his device {}.",userId,command,iemi);
+            logger.info("User {} has successfully added a command {} to his device {}.",userId,command,imei);
             return success();
         }
     }
@@ -195,20 +195,20 @@ public class DeviceController extends BaseController{
 //        String token=request.getParameter("token");
 //        Object value = redisTemplate.opsForValue().get(token);
 //        String userId=value.toString();
-//        String iemi=communicationMode.get("iemi");
+//        String imei=communicationMode.get("imei");
 //        String mode=communicationMode.get("communication_mode");
-//        UserDevice userDevice=userdeviceRepository.findDeviceByUserIdAndIemiAndIsdelete(userId,iemi,false);
+//        UserDevice userDevice=userdeviceRepository.findDeviceByUserIdAndImeiAndIsdelete(userId,imei,false);
 //        if (userDevice==null){
 //            return error(ResultVo.ResultCode.DEVICE_INVALID_ERROR);
 //        }
 //        if (mode.equals(CommunicationMode.SUCCESSIVE.getDesc())){
-//            JSONObject state=awsIotUtil.getShadow(iemi).getJSONObject("state");
+//            JSONObject state=awsIotUtil.getShadow(imei).getJSONObject("state");
 //            JSONObject desired=state.getJSONObject("desired");
 //            String setting=desired.getString("settings");
 //            String[] settings=setting.split(",");
 //            String newSetting=settings[0]+","+mode+","+settings[2];
 //            String newState = "{\"state\":{\"desired\":{\"settings\":\""+newSetting+"\"}}}";
-//            awsIotUtil.putShadow(iemi,newState);
+//            awsIotUtil.putShadow(imei,newState);
 
 //            return success();
 //        }
@@ -235,13 +235,13 @@ public class DeviceController extends BaseController{
 //        String token=request.getParameter("token");
 //        Object value = redisTemplate.opsForValue().get(token);
 //        String userId=value.toString();
-//        String iemi=communicationInterval.get("iemi");
+//        String imei=communicationInterval.get("imei");
 //        String interval=communicationInterval.get("communication_interval");
-//        UserDevice userDevice=userdeviceRepository.findDeviceByUserIdAndIemiAndIsdelete(userId,iemi,false);
+//        UserDevice userDevice=userdeviceRepository.findDeviceByUserIdAndImeiAndIsdelete(userId,imei,false);
 //        if (userDevice==null){
 //            return error(ResultVo.ResultCode.DEVICE_INVALID_ERROR);
 //        }
-//        JSONObject state=awsIotUtil.getShadow(iemi).getJSONObject("state");
+//        JSONObject state=awsIotUtil.getShadow(imei).getJSONObject("state");
 //        JSONObject desired=state.getJSONObject("desired");
 //        String setting=desired.getString("settings");
 //        String[] settings=setting.split(",");
@@ -252,7 +252,7 @@ public class DeviceController extends BaseController{
 //                || settings[1].equals(CommunicationMode.POWERSAVING.getCode())){
 //            String newSetting=settings[0]+","+settings[1]+","+interval;
 //            String newState = "{\"state\":{\"desired\":{\"settings\":\""+newSetting+"\"}}}";
-//            awsIotUtil.putShadow(iemi,newState);
+//            awsIotUtil.putShadow(imei,newState);
 //            return success();
 //        }
 //        else return error(ResultVo.ResultCode.COMMUNICATION_MODE_ERROR);
@@ -265,12 +265,12 @@ public class DeviceController extends BaseController{
 //        String token=request.getParameter("token");
 //        Object value = redisTemplate.opsForValue().get(token);
 //        String userId=value.toString();
-//        String iemi=turnOn.get("iemi");
-//        UserDevice userDevice=userdeviceRepository.findDeviceByUserIdAndIemiAndIsdelete(userId,iemi,false);
+//        String imei=turnOn.get("imei");
+//        UserDevice userDevice=userdeviceRepository.findDeviceByUserIdAndImeiAndIsdelete(userId,imei,false);
 //        if (userDevice==null){
 //            return error(ResultVo.ResultCode.DEVICE_INVALID_ERROR);
 //        }
-//        JSONObject state=awsIotUtil.getShadow(iemi).getJSONObject("state");
+//        JSONObject state=awsIotUtil.getShadow(imei).getJSONObject("state");
 //        JSONObject desired=state.getJSONObject("desired");
 //        String setting=desired.getString("settings");
 //        String[] settings=setting.split(",");
@@ -280,7 +280,7 @@ public class DeviceController extends BaseController{
 //        else {
 //            String newSetting="1"+","+settings[1]+","+settings[2];
 //            String newState = "{\"state\":{\"desired\":{\"settings\":\""+newSetting+"\"}}}";
-//            awsIotUtil.putShadow(iemi,newState);
+//            awsIotUtil.putShadow(imei,newState);
 //            return success();
 //        }
 //    }
@@ -292,12 +292,12 @@ public class DeviceController extends BaseController{
 //        String token=request.getParameter("token");
 //        Object value = redisTemplate.opsForValue().get(token);
 //        String userId=value.toString();
-//        String iemi=turnOff.get("iemi");
-//        UserDevice device=userdeviceRepository.findDeviceByUserIdAndIemiAndIsdelete(userId,deviceId,false);
+//        String imei=turnOff.get("imei");
+//        UserDevice device=userdeviceRepository.findDeviceByUserIdAndImeiAndIsdelete(userId,deviceId,false);
 //        if (device==null){
 //            return error(ResultVo.ResultCode.DEVICE_INVALID_ERROR);
 //        }
-//        JSONObject state=awsIotUtil.getShadow(iemi).getJSONObject("state");
+//        JSONObject state=awsIotUtil.getShadow(imei).getJSONObject("state");
 //        JSONObject desired=state.getJSONObject("desired");
 //        String setting=desired.getString("settings");
 //        String[] settings=setting.split(",");
@@ -307,7 +307,7 @@ public class DeviceController extends BaseController{
 //        else {
 //            String newSetting="0"+","+settings[1]+","+settings[2];
 //            String newState = "{\"state\":{\"desired\":{\"settings\":\""+newSetting+"\"}}}";
-//            awsIotUtil.putShadow(iemi,newState);
+//            awsIotUtil.putShadow(imei,newState);
 //            return success();
 //        }
 //    }

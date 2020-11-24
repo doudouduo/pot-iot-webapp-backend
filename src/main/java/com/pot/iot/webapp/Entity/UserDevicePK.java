@@ -8,7 +8,7 @@ import java.io.Serializable;
 @Embeddable
 @Data
 public class UserDevicePK implements Serializable {
-    private String iemi;
+    private String imei;
     private String userId;
 
     @Override
@@ -16,7 +16,7 @@ public class UserDevicePK implements Serializable {
         final int PRIME = 31;
         int result = 1;
         result = PRIME * result + ((userId == null) ? 0 : userId.hashCode());
-        result = PRIME * result + ((iemi == null) ? 0 : iemi.hashCode());
+        result = PRIME * result + ((imei == null) ? 0 : imei.hashCode());
         return result;
     }
 
@@ -40,11 +40,11 @@ public class UserDevicePK implements Serializable {
         }else if(!userId.equals(other.userId)){
             return false;
         }
-        if(iemi == null){
-            if(other.iemi != null){
+        if(imei == null){
+            if(other.imei != null){
                 return false;
             }
-        }else if(!iemi.equals(other.iemi)){
+        }else if(!imei.equals(other.imei)){
             return false;
         }
         return true;

@@ -8,6 +8,6 @@ import java.util.List;
 
 public interface UserDeviceRepository extends JpaRepository<UserDevice, UserDevicePK> {
     List<UserDevice> findDevicesByUserIdAndIsdelete(String userid,boolean isdelete);
-    UserDevice findDeviceByUserIdAndIemiAndIsdelete(String userid,String iemi,boolean isdelete);
-    UserDevice findDeviceByIemiAndIsdelete(String iemi,boolean isdelete);
+    UserDevice findDeviceByUserIdAndImeiAndIsdelete(String userid,String imei,boolean isdelete);
+    UserDevice findDeviceByImeiAndIsdelete(String imei,boolean isdelete);
 }

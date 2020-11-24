@@ -16,7 +16,7 @@ import java.util.Date;
 @EntityListeners(AuditingEntityListener.class)
 public class UserDevice {
     @Id
-    private String iemi;
+    private String imei;
     @Id
     @JSONField(name="user_id")
     private String userId;
@@ -81,8 +81,8 @@ public class UserDevice {
         isdelete=false;
     }
 
-    public UserDevice(String iemi,String userId,String pinCode,String name,String description){
-        this.iemi=iemi;
+    public UserDevice(String imei,String userId,String pinCode,String name,String description){
+        this.imei=imei;
         this.userId=userId;
         this.pinCode=pinCode;
         this.name=name;
