@@ -6,6 +6,7 @@ import com.pot.iot.webapp.Entity.User;
 import com.pot.iot.webapp.Interface.IMailService;
 import com.pot.iot.webapp.Repository.UserRepository;
 import com.pot.iot.webapp.Util.RS256Util;
+import net.sf.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -123,7 +124,10 @@ public class UserController extends BaseController {
             redisTemplate.opsForValue().set(token,user.getUserId() , rs256Util.LOGIN_EXPIRE_TIME, TimeUnit.MILLISECONDS);
             redisTemplate.opsForValue().set(user.getUserId() ,token, rs256Util.LOGIN_EXPIRE_TIME, TimeUnit.MICROSECONDS);
 
-            return success(token);
+            JSONObject jsonObject=new JSONObject();
+            jsonObject.put("token",token);
+            jsonObject.put("username",user.getUsername());
+            return success(jsonObject);
         }
         else return error(ResultVo.ResultCode.WRONG_PASSWORD_ERROR);
     }
