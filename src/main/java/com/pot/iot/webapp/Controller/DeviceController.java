@@ -6,6 +6,7 @@ import com.pot.iot.webapp.Entity.ResultVo;
 import com.pot.iot.webapp.Entity.UserDevice;
 import com.pot.iot.webapp.Repository.DeviceInfoRepository;
 import com.pot.iot.webapp.Repository.UserDeviceRepository;
+import com.pot.iot.webapp.Service.LogService;
 import com.pot.iot.webapp.UserController;
 import com.pot.iot.webapp.Util.AWSIotUtil;
 import com.sun.org.apache.regexp.internal.RE;
@@ -32,6 +33,8 @@ public class DeviceController extends BaseController{
     private DeviceInfoRepository deviceInfoRepository;
     @Autowired
     private RedisTemplate redisTemplate;
+    @Autowired
+    private LogService logService;
     @Autowired
     private AWSIotUtil awsIotUtil;
     Logger logger = LoggerFactory.getLogger(DeviceController.class);
@@ -179,12 +182,14 @@ public class DeviceController extends BaseController{
             userDevice.setDeviceCommand(command);
             userdeviceRepository.save(userDevice);
             logger.info("User {} has successfully added a command {} to his device {}.",userId,command,imei);
+            logService.addCommandLog(imei,command);
             return success();
         }
         else {
             userDevice.setDeviceCommand(userDevice.getDeviceCommand()+";"+command);
             userdeviceRepository.save(userDevice);
             logger.info("User {} has successfully added a command {} to his device {}.",userId,command,imei);
+            logService.addCommandLog(imei,command);
             return success();
         }
     }
